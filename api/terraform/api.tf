@@ -101,15 +101,23 @@ resource "aws_api_gateway_method" "delete_term_method" {
     resource_id = aws_api_gateway_resource.term_resource.id
     http_method = "DELETE"
     authorization = "NONE"
+
+    request_parameters = {
+        "method.request.querystring.term" = true
+    }
 }
 
 resource "aws_api_gateway_integration" "delete_term_integration" {
     rest_api_id = aws_api_gateway_rest_api.glossary_api.id
     resource_id = aws_api_gateway_resource.term_resource.id
     http_method = aws_api_gateway_method.delete_term_method.http_method
-    integration_http_method = "DELETE"
+    integration_http_method = "POST"
     type = "AWS_PROXY"
     uri = aws_lambda_function.delete_term.invoke_arn
+
+    request_parameters = {
+        "integration.request.querystring.term" = "method.request.querystring.term"
+    }
 }
 
 # Get Term
@@ -149,15 +157,23 @@ resource "aws_api_gateway_method" "get_term_method" {
     resource_id = aws_api_gateway_resource.term_resource.id
     http_method = "GET"
     authorization = "NONE"
+
+    request_parameters = {
+        "method.request.querystring.term" = true
+    }
 }
 
 resource "aws_api_gateway_integration" "get_term_integration" {
     rest_api_id = aws_api_gateway_rest_api.glossary_api.id
     resource_id = aws_api_gateway_resource.term_resource.id
     http_method = aws_api_gateway_method.get_term_method.http_method
-    integration_http_method = "GET"
+    integration_http_method = "POST"
     type = "AWS_PROXY"
     uri = aws_lambda_function.get_term.invoke_arn
+
+    request_parameters = {
+        "integration.request.querystring.term" = "method.request.querystring.term"
+    }
 }
 
 
@@ -169,12 +185,12 @@ resource "aws_api_gateway_resource" "term_scan_resource" {
 }
 
 # Creating the Get Terms Lambda Function
-resource "aws_lambda_function" "get_terms" {
+resource "aws_lambda_function" "scan_terms" {
     runtime = "nodejs20.x"
     role = aws_iam_role.glossy_lambda_execution_role.arn
 
-    function_name = "get_terms"
-    handler = "app.getTerms"
+    function_name = "scan_terms"
+    handler = "app.scanTerms"
 
     filename = data.archive_file.api_zip.output_path
     source_code_hash = data.archive_file.api_zip.output_base64sha256
@@ -190,30 +206,40 @@ resource "aws_lambda_function" "get_terms" {
     }
 }
 
-resource "aws_lambda_permission" "get_terms_api_gateway_permission" {
+resource "aws_lambda_permission" "scan_terms_api_gateway_permission" {
     statement_id = "AllowAPIGatewayInvoke"
     action = "lambda:InvokeFunction"
-    function_name = aws_lambda_function.get_terms.function_name
+    function_name = aws_lambda_function.scan_terms.function_name
     principal = "apigateway.amazonaws.com"
 
     source_arn = "${aws_api_gateway_rest_api.glossary_api.execution_arn}/*/*"
 }
 
 # Registering the Get Terms Method and Integration
-resource "aws_api_gateway_method" "get_terms_method" {
+resource "aws_api_gateway_method" "scan_terms_method" {
     rest_api_id = aws_api_gateway_rest_api.glossary_api.id
     resource_id = aws_api_gateway_resource.term_scan_resource.id
     http_method = "GET"
     authorization = "NONE"
+
+    request_parameters = {
+        "method.request.querystring.lastTerm" = false
+        "method.request.querystring.limit" = false
+    }
 }
 
-resource "aws_api_gateway_integration" "get_terms_integration" {
+resource "aws_api_gateway_integration" "scan_terms_integration" {
     rest_api_id = aws_api_gateway_rest_api.glossary_api.id
     resource_id = aws_api_gateway_resource.term_scan_resource.id
-    http_method = aws_api_gateway_method.get_terms_method.http_method
-    integration_http_method = "GET"
+    http_method = aws_api_gateway_method.scan_terms_method.http_method
+    integration_http_method = "POST"
     type = "AWS_PROXY"
-    uri = aws_lambda_function.get_terms.invoke_arn
+    uri = aws_lambda_function.scan_terms.invoke_arn
+
+    request_parameters = {
+        "integration.request.querystring.lastTerm" = "method.request.querystring.lastTerm"
+        "integration.request.querystring.limit" = "method.request.querystring.limit"
+    }
 }
 
 # Registering the Deployment
@@ -225,8 +251,12 @@ resource "aws_api_gateway_deployment" "glossary_api_deployment" {
         aws_api_gateway_integration.create_and_update_term_integration,
         aws_api_gateway_integration.delete_term_integration,
         aws_api_gateway_integration.get_term_integration,
-        aws_api_gateway_integration.get_terms_integration
+        aws_api_gateway_integration.scan_terms_integration
     ]
+
+    variables = {
+        deployed_at = "${timestamp()}"
+    }
 }
 
 output "api_endpoint" {

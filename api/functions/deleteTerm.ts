@@ -45,7 +45,7 @@ export const handler = async (
 	metrics.captureColdStartMetric();
 
 	try {
-        const term = event.pathParameters?.term;
+        const term = event.queryStringParameters?.term;
 
         if(!term) {
             return {

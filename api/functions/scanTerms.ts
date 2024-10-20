@@ -45,8 +45,8 @@ export const handler = async (
 	metrics.captureColdStartMetric();
 
 	try {
-        const lastTerm = event.pathParameters?.lastTerm;
-        const limit = +(event.pathParameters?.limit ?? 1000);
+        const lastTerm = event.queryStringParameters?.lastTerm;
+        const limit = +(event.queryStringParameters?.limit ?? 1000);
     
         const { items, lastEvaluatedKey } = await scanTermsFromDynamoDB(logger, limit, lastTerm);
 

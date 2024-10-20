@@ -21,7 +21,8 @@ resource "aws_iam_policy" "glossy_lambda_execution_policy" {
                     "dynamodb:GetItem",
                     "dynamodb:GetRecords",
                     "dynamodb:PutItem",
-                    "dynamodb:UpdateItem"
+                    "dynamodb:UpdateItem",
+                    "dynamodb:Scan"
                 ],
                 "Effect": "Allow",
                 "Resource": "arn:aws:dynamodb:${var.region}:${var.account_id}:table/glossary_terms"

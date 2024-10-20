@@ -89,7 +89,9 @@ export const handler = async (
 
 		return {
 			statusCode: 500,
-			body: JSON.stringify({ message: "error writing data to table" }),
+			body: JSON.stringify({
+				message: `error writing data to table; error message: ${err.message}`,
+			}),
 		};
 	} finally {
 		if (segment && handlerSegment) {
