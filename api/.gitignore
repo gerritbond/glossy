@@ -1,0 +1,16 @@
+*.js
+!.eslintrc.js
+!jest.config.js
+*.d.ts
+node_modules
+
+# npm lock file - this is managed by the npm workspace
+package-lock.json
+
+.env
+app.zip
+
+dist
+
+terraform.tfstate
+terraform.tfstate.backup
