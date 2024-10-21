@@ -3,8 +3,9 @@ import { docClient } from "#clients/dynamodb";
 import { itemsTableName } from "#constants";
 import type { DebugLogger } from "#types";
 
-const deleteTermFromDynamoDB = async (
+const disassociateCategoryWithTermInDynamoDB = async (
 	term: string,
+	category: string,
 	logger: DebugLogger,
 ): Promise<{ success: boolean }> => {
 	const response = await docClient.send(
@@ -12,7 +13,7 @@ const deleteTermFromDynamoDB = async (
 			TableName: itemsTableName,
 			Key: {
 				pk: `Term-${term}`,
-				sk: `Term-${term}`,
+				sk: `Category-${category}`,
 			},
 		}),
 	);
@@ -24,4 +25,4 @@ const deleteTermFromDynamoDB = async (
 	return { success: true };
 };
 
-export { deleteTermFromDynamoDB };
+export { disassociateCategoryWithTermInDynamoDB };

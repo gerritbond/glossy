@@ -12,7 +12,11 @@ const putTermInDynamoDB = async (
 	const response = await docClient.send(
 		new PutCommand({
 			TableName: itemsTableName,
-			Item: term,
+			Item: {
+				...term,
+				pk: `Term-${term.term}`,
+				sk: `Term-${term.term}`,
+			},
 		}),
 	);
 

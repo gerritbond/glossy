@@ -8,10 +8,11 @@ import type { Subsegment } from "aws-xray-sdk-core";
 import { putTermInDynamoDB } from "#helpers/putTerm";
 import { assertIsError } from "#helpers/utils";
 import { logger, metrics, tracer } from "#powertools";
-import type { Term } from "#types";
+import type { Category, Term } from "#types";
+import { putCategoryInDynamoDB } from "#helpers/putCategory";
 
 /**
- * Create or update a term in the DynamoDB table.
+ * Create or update a category in the DynamoDB table.
  *
  * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
  * @param {APIGatewayProxyEvent} event - API Gateway Lambda Proxy Input Format
@@ -29,7 +30,7 @@ export const handler = async (
 
 	if (event.httpMethod !== "PUT") {
 		throw new Error(
-			`createAndUpdateTerm only accepts PUT method, you tried: ${event.httpMethod}`,
+			`createAndUpdateCategory only accepts PUT method, you tried: ${event.httpMethod}`,
 		);
 	}
 	if (!event.body) {
@@ -51,40 +52,31 @@ export const handler = async (
 	try {
 		const body = JSON.parse(event.body);
 		const {
-			term,
-			definition,
-			categories,
-			relatedTerms,
-			isAbbreviation,
-			pronunciation,
-			example,
+			category,
+			description,
 		} = body;
 
-		const structuredTerm: Term = {
+		const structuredCategory: Category = {
 			lastUpdatedAt: null,
-			term,
-			definition,
-			relatedTerms,
-			isAbbreviation,
-			pronunciation,
-			example,
+			category,
+			description,
 		};
 
-		const createdTerm = await putTermInDynamoDB(structuredTerm, logger);
+		const createdCategory = await putCategoryInDynamoDB(structuredCategory, logger);
 
-		metrics.addMetric("termsAdded", MetricUnit.Count, 1);
+		metrics.addMetric("categoriesAdded", MetricUnit.Count, 1);
 
 		return {
 			statusCode: 200,
-			body: JSON.stringify({ message: "success", createdTerm }),
+			body: JSON.stringify({ message: "success", createdCategory }),
 		};
 	} catch (err) {
 		assertIsError(err);
 
 		tracer.addErrorAsMetadata(err);
-		metrics.addMetric("itemsInsertErrors", MetricUnit.Count, 1);
+		metrics.addMetric("categoriesInsertErrors", MetricUnit.Count, 1);
 
-		logger.error("error storing item", err);
+		logger.error("error storing category", err);
 
 		return {
 			statusCode: 500,

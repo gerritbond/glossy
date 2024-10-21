@@ -5,13 +5,12 @@ import type {
 	Context,
 } from "aws-lambda";
 import type { Subsegment } from "aws-xray-sdk-core";
-import { putTermInDynamoDB } from "#helpers/putTerm";
 import { assertIsError } from "#helpers/utils";
 import { logger, metrics, tracer } from "#powertools";
-import type { Term } from "#types";
+import { getCategoryFromDynamoDB } from "#helpers/getCategory";
 
 /**
- * Create or update a term in the DynamoDB table.
+ * Get a term from the DynamoDB table.
  *
  * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
  * @param {APIGatewayProxyEvent} event - API Gateway Lambda Proxy Input Format
@@ -27,13 +26,10 @@ export const handler = async (
 ): Promise<APIGatewayProxyResult> => {
 	logger.debug("event", { event });
 
-	if (event.httpMethod !== "PUT") {
+	if (event.httpMethod !== "GET") {
 		throw new Error(
-			`createAndUpdateTerm only accepts PUT method, you tried: ${event.httpMethod}`,
+			`getCategory only accepts GET method, you tried: ${event.httpMethod}`,
 		);
-	}
-	if (!event.body) {
-		throw new Error("Event does not contain body");
 	}
 	logger.addContext(context);
 
@@ -49,48 +45,32 @@ export const handler = async (
 	metrics.captureColdStartMetric();
 
 	try {
-		const body = JSON.parse(event.body);
-		const {
-			term,
-			definition,
-			categories,
-			relatedTerms,
-			isAbbreviation,
-			pronunciation,
-			example,
-		} = body;
+        const category = event.queryStringParameters?.category;
 
-		const structuredTerm: Term = {
-			lastUpdatedAt: null,
-			term,
-			definition,
-			relatedTerms,
-			isAbbreviation,
-			pronunciation,
-			example,
-		};
-
-		const createdTerm = await putTermInDynamoDB(structuredTerm, logger);
-
-		metrics.addMetric("termsAdded", MetricUnit.Count, 1);
+        if(!category) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ message: "Category is required" }),
+            };
+        }
+    
+		const categoryDefinition = await getCategoryFromDynamoDB(category, logger);
 
 		return {
 			statusCode: 200,
-			body: JSON.stringify({ message: "success", createdTerm }),
+			body: JSON.stringify({ message: "success", category: categoryDefinition }),
 		};
 	} catch (err) {
 		assertIsError(err);
 
 		tracer.addErrorAsMetadata(err);
-		metrics.addMetric("itemsInsertErrors", MetricUnit.Count, 1);
+		metrics.addMetric("categoryGetErrors", MetricUnit.Count, 1);
 
-		logger.error("error storing item", err);
+		logger.error("error getting category", err);
 
 		return {
 			statusCode: 500,
-			body: JSON.stringify({
-				message: `error writing data to table; error message: ${err.message}`,
-			}),
+			body: JSON.stringify({ message: "error getting category" }),
 		};
 	} finally {
 		if (segment && handlerSegment) {

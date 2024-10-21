@@ -10,7 +10,7 @@ import type { DebugLogger } from "#types";
  * @param limit The maximum number of items to return per page (optional, default: 1000)
  * @param startKey The exclusive start key for pagination (optional)
  */
-const scanTermsFromDynamoDB = async (
+const scanCategoriesFromDynamoDB = async (
 	logger: DebugLogger,
 	limit = 1000,
 	startKey?: string | null,
@@ -21,12 +21,12 @@ const scanTermsFromDynamoDB = async (
 	const response = await docClient.send(
 		new ScanCommand({
 			TableName: itemsTableName,
-			Limit: limit,
-			FilterExpression: "begins_with(sk, :termPrefix)",
+			FilterExpression: "begins_with(sk, :categoryPrefix) and begins_with(pk, :categoryPrefix)",
 			ExpressionAttributeValues: {
-				":termPrefix": "Term-",
+				":categoryPrefix": "Category-",
 			},
-			ExclusiveStartKey: startKey ? { pk: `Term-${startKey}`, sk: `Term-${startKey}` } : undefined,
+			Limit: limit,
+			ExclusiveStartKey: startKey ? { pk: `Category-${startKey}`, sk: `Category-${startKey}` } : undefined,
 		}),
 	);
 
@@ -36,8 +36,8 @@ const scanTermsFromDynamoDB = async (
 
 	return {
 		items: response.Items || [],
-		lastEvaluatedKey: response.LastEvaluatedKey?.term ?? "",
+		lastEvaluatedKey: response.LastEvaluatedKey?.category ?? "",
 	};
 };
 
-export { scanTermsFromDynamoDB };
+export { scanCategoriesFromDynamoDB };

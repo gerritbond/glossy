@@ -1,12 +1,30 @@
 resource "aws_dynamodb_table" "glossary_terms" {
 	name = "glossary_terms"
-    hash_key = "term"
+    hash_key = "pk"
+    range_key = "sk"
+
     billing_mode = "PAY_PER_REQUEST"
 
-	attribute {
-		name = "term"
-		type = "S"
-	}
+    attribute {
+        name = "pk"
+        type = "S"
+    }
+
+    attribute {
+        name = "sk"
+        type = "S"
+    }
+
+    global_secondary_index {
+        name = "category_index"
+        hash_key = "sk"
+        range_key = "pk"
+        projection_type = "KEYS_ONLY"
+    }
+
+    tags = {
+        IaC = var.iac_tag
+    }
 }
 
 resource "aws_iam_policy" "glossy_lambda_execution_policy" {
@@ -22,10 +40,19 @@ resource "aws_iam_policy" "glossy_lambda_execution_policy" {
                     "dynamodb:GetRecords",
                     "dynamodb:PutItem",
                     "dynamodb:UpdateItem",
-                    "dynamodb:Scan"
+                    "dynamodb:Scan",
+                    "dynamodb:Query"
                 ],
                 "Effect": "Allow",
                 "Resource": "arn:aws:dynamodb:${var.region}:${var.account_id}:table/glossary_terms"
+            },
+            {
+                "Sid": "AllowQueryAccessOnIndex",
+                "Action": [
+                    "dynamodb:Query"
+                ],
+                "Effect": "Allow",
+                "Resource": "arn:aws:dynamodb:${var.region}:${var.account_id}:table/glossary_terms/index/category_index"
             },
             {
                 "Sid": "AllowLogging",

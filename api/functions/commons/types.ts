@@ -7,7 +7,6 @@ type DebugLogger = {
 type Term = {
 	term: string;
 	definition: string;
-	categories: string[];
 	pronunciation: string | null;
 	example: string | null;
 	relatedTerms: string[];
@@ -15,4 +14,10 @@ type Term = {
 	lastUpdatedAt: string | null;
 };
 
-export type { DebugLogger, Term };
+type Category = {
+	category: string;
+	description: string;
+	lastUpdatedAt: string | null;
+}
+
+export type { DebugLogger, Term, Category };

@@ -9,16 +9,16 @@ import type { DebugLogger } from "#types";
  * @param term The term to fetch from the DynamoDB table
  * @param logger A logger instance
  */
-const getTermFromDynamoDB = async (
-	term: string,
+const getCategoryFromDynamoDB = async (
+	category: string,
 	logger: DebugLogger,
 ): Promise<GetCommandOutput["Item"]> => {
 	const response = await docClient.send(
 		new GetCommand({
 			TableName: itemsTableName,
 			Key: {
-				pk: `Term-${term}`,
-				sk: `Term-${term}`,
+				pk: `Category-${category}`,
+				sk: `Category-${category}`,
 			},
 		}),
 	);
@@ -30,4 +30,4 @@ const getTermFromDynamoDB = async (
 	return response.Item;
 };
 
-export { getTermFromDynamoDB };
+export { getCategoryFromDynamoDB };
