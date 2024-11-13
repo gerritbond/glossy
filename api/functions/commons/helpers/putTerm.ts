@@ -14,6 +14,7 @@ const putTermInDynamoDB = async (
 			TableName: itemsTableName,
 			Item: {
 				...term,
+				type: "Term",
 				pk: `Term-${term.term}`,
 				sk: `Term-${term.term}`,
 			},

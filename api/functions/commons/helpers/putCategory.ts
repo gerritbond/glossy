@@ -14,6 +14,7 @@ const putCategoryInDynamoDB = async (
 			TableName: itemsTableName,
 			Item: {
 				...category,
+				type: "Category",
 				pk: `Category-${category.category}`,
 				sk: `Category-${category.category}`,
 			},

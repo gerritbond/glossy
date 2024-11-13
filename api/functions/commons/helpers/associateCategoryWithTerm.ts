@@ -15,6 +15,7 @@ const associateCategoryWithTermInDynamoDB = async (
 				lastUpdatedAt: new Date().toISOString(),
 				pk: `Term-${term}`,
 				sk: `Category-${category}`,
+				type: "CategoryAssociation",
 			},
 		}),
 	);

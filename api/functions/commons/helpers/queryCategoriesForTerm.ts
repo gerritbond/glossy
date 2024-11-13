@@ -23,10 +23,8 @@ const queryCategoriesForTermFromDynamoDB = async (
 		new QueryCommand({
 			TableName: itemsTableName,
 			KeyConditionExpression: "pk = :term",
-			// FilterExpression: "begins_with(sk, :categoryPrefix)",
 			ExpressionAttributeValues: {
-				":term": `Term-${term}`,
-				":categoryPrefix": "Category-",
+				":term": `Term-${term}`
 			},
 			Limit: limit,
 			ExclusiveStartKey: startKey ? { pk: `Term-${term}`, sk: `Category-${startKey}` } : undefined,
@@ -37,9 +35,17 @@ const queryCategoriesForTermFromDynamoDB = async (
 		response,
 	});
 
+
+	const categories = response.Items?.filter((item) => item.type === "CategoryAssociation").map((item) => ({
+			category: item.sk.replace("Category-", ""),
+			term: item.pk.replace("Term-", ""),
+		}));
+
+	// In theory this could result in returning less results than the limit requests, while still having additional values
+	// because we are filtering out the term definition and any future objects that may be added to the collection.
 	return {
-		items: response.Items || [],
-		lastEvaluatedKey: response.LastEvaluatedKey?.sk ?? "",
+		items: categories || [],
+		lastEvaluatedKey: response.LastEvaluatedKey?.sk.replace("Category-", "") ?? "",
 	};
 };
 

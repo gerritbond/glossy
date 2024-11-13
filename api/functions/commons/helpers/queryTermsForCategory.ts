@@ -23,8 +23,11 @@ const queryTermsForCategoryFromDynamoDB = async (
 		new QueryCommand({
 			TableName: itemsTableName,
 			IndexName: "category_index",
-			KeyConditionExpression: "pk = :category",
-			// FilterExpression: "begins_with(sk, :termPrefix)",
+			KeyConditionExpression: "#pk = :category and begins_with(#sk, :termPrefix)",
+			ExpressionAttributeNames: {
+				"#pk": "pk",
+				"#sk": "sk",
+			},
 			ExpressionAttributeValues: {
 				":category": `Category-${category}`,
 				":termPrefix": "Term-",
@@ -38,9 +41,14 @@ const queryTermsForCategoryFromDynamoDB = async (
 		response,
 	});
 
+	const terms = response.Items?.filter((item) => item.type === "CategoryAssociation").map((item) => ({
+			term: item.sk.replace("Term-", ""),
+			category: item.pk.replace("Category-", ""),
+	}));
+
 	return {
-		items: response.Items || [],
-		lastEvaluatedKey: response.LastEvaluatedKey?.sk ?? "",
+		items: terms || [],
+		lastEvaluatedKey: response.LastEvaluatedKey?.sk.replace("Term-", "") ?? "",
 	};
 };
 
